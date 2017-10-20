@@ -9,6 +9,13 @@ let g:soredake_enable = get(g:, 'soredake_enable', 1)
 " default value for maximum height
 let g:soredake_maxheight = get(g:, 'soredake_maxheight', 6)
 
+let g:soredake_ascii_mapping = {
+            \'enter'    : 13,
+            \'esc'      : 27,
+            \'space'    : 32,
+            \'backspace': "\<BS>"
+            \}
+
 function! s:setup_window()
     botright split BufferList
     execute 'resize ' . min([len(g:buflist), g:soredake_maxheight])
@@ -58,7 +65,7 @@ function! soredake#select_buffer()
     let l:bufnr = g:buflist[l:idx]['bufnr']
     let l:winnr = bufwinnr(l:bufnr)
 
-    call soredake#wipeout_goback()
+    call soredake#wipeout_buffer()
 
     if l:winnr == -1
         execute 'buffer ' . l:bufnr
@@ -67,18 +74,51 @@ function! soredake#select_buffer()
     endif
 endfunction
 
-function! soredake#wipeout_goback()
-    bwipeout
-    execute g:lastwinnr . 'wincmd w'
-endfunction
-
 function! s:register_bufferlist_mappings()
-    nnoremap <buffer> <Esc> :silent! call soredake#wipeout_goback()<Cr>
+    nnoremap <buffer> <Esc> :silent! call soredake#wipeout_buffer()<Cr>
     nnoremap <buffer> <Space> :silent! call soredake#select_buffer()<Cr>
     nnoremap <buffer> <Cr> :silent! call soredake#select_buffer()<Cr>
 endfunction
 
+function! s:fuzzy_find()
+    " Redraw screen
+    redraw
+
+    " Grab input
+    let str = '>>'
+    let chr = g:soredake_ascii_mapping['space']
+
+    while chr != g:soredake_ascii_mapping['enter'] && chr != g:soredake_ascii_mapping['esc']
+        redraw
+
+        if chr == g:soredake_ascii_mapping['backspace']
+            " Delete last character only if we have typed something
+            if len(str) > 3
+                let str = str[:len(str) - 2]
+            endif
+        else
+            " Else, append it to the end of the string
+            let str = str . nr2char(chr)
+        endif
+        echo str
+
+        let chr = getchar()
+        echom chr
+    endwhile
+
+    if chr == g:soredake_ascii_mapping['enter']
+        " Should enter file, if exists
+    else
+        " Cancel
+        call soredake#wipeout_buffer()
+    endif
+
+    redraw!
+endfunction
+
 function! s:show_buffer_list(current)
+    set laststatus=0
+
     let g:buflist = getbufinfo({ 'buflisted': 1 })
     let g:lastwinnr = winnr()
     let g:curbufidx = 1
@@ -96,17 +136,13 @@ function! s:show_buffer_list(current)
     call s:setup_window()
     call s:display_bufferlist()
     call s:register_bufferlist_mappings()
+    call s:fuzzy_find()
+endfunction
 
-    redraw
-    let chr = getchar()
-    let str = ''
-    echom chr
-    while chr != '\<Cr>'
-        redraw
-        let str = str . nr2char(chr)
-        echo str
-        let chr = getchar()
-    endwhile
+function! soredake#wipeout_buffer()
+    bwipeout
+    set laststatus=2
+    execute g:lastwinnr . 'wincmd w'
 endfunction
 
 function! soredake#enable()
@@ -117,4 +153,3 @@ endfunction
 if g:soredake_enable
     call soredake#enable()
 endif
-
