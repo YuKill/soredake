@@ -1,0 +1,25 @@
+*soredake.txt*    That's all for this plugin.    *soredake*
+
+Author: Yukio
+
+==============================================================================
+1. Useful Variables                                 *soredake-vars*
+
+                                                    *g:soredake_enable* 
+g:soredake_enable
+                Type: Int [0 or 1]
+                Default: 1
+
+                Indicates whether to enable soredake from start
+                or not.
+
+                                                    *g:soredake_maxheight* 
+g:soredake_maxheight
+                Type: Int
+                Default: 6
+
+                Maximum height of the window openned with buffer
+                information.
+
+==============================================================================
+vim:tw=78:sw=4:ft=help:norl:
