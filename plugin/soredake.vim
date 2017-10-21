@@ -13,12 +13,16 @@ let g:soredake_ascii_mapping = {
             \'enter'    : 13,
             \'esc'      : 27,
             \'space'    : 32,
-            \'backspace': "\<BS>"
+            \'tab'      : 9,
+            \'backspace': "\<BS>",
+            \'ignore'   : -42
             \}
+
+let s:search_string = ''
 
 function! s:setup_window()
     botright split BufferList
-    execute 'resize ' . min([len(g:buflist), g:soredake_maxheight])
+    execute 'resize ' . min([len(s:buflist), g:soredake_maxheight])
 
     setlocal bufhidden=delete
     setlocal filetype=bufferlist
@@ -35,8 +39,8 @@ function! s:display_bufferlist()
     setlocal modifiable
 
     let l:idx = 1
-    for l:item in g:buflist
-        if l:idx == g:curbufidx
+    for l:item in s:buflist
+        if l:idx == s:curbufidx
             let l:current_sym = '>> '
         else
             let l:current_sym = '   '
@@ -56,13 +60,13 @@ function! s:display_bufferlist()
     endfor
 
     normal! ddgg
-    execute ':' . g:curbufidx
+    execute ':' . s:curbufidx
     setlocal nomodifiable
 endfunction
 
 function! soredake#select_buffer()
     let l:idx = line('.') - 1
-    let l:bufnr = g:buflist[l:idx]['bufnr']
+    let l:bufnr = s:buflist[l:idx]['bufnr']
     let l:winnr = bufwinnr(l:bufnr)
 
     call soredake#wipeout_buffer()
@@ -78,17 +82,18 @@ function! s:register_bufferlist_mappings()
     nnoremap <buffer> <Esc> :silent! call soredake#wipeout_buffer()<Cr>
     nnoremap <buffer> <Space> :silent! call soredake#select_buffer()<Cr>
     nnoremap <buffer> <Cr> :silent! call soredake#select_buffer()<Cr>
+    nnoremap <buffer> <Tab> :call soredake#fuzzyfind()<Cr>
 endfunction
 
-function! s:fuzzy_find()
+function! soredake#fuzzyfind()
     " Redraw screen
     redraw
 
     " Grab input
-    let str = '>>'
-    let chr = g:soredake_ascii_mapping['space']
+    let str = '>> ' . s:search_string
+    let chr = g:soredake_ascii_mapping['ignore']
 
-    while chr != g:soredake_ascii_mapping['enter'] && chr != g:soredake_ascii_mapping['esc']
+    while v:true
         redraw
 
         if chr == g:soredake_ascii_mapping['backspace']
@@ -96,37 +101,43 @@ function! s:fuzzy_find()
             if len(str) > 3
                 let str = str[:len(str) - 2]
             endif
-        else
+        elseif chr != g:soredake_ascii_mapping['ignore']
             " Else, append it to the end of the string
             let str = str . nr2char(chr)
         endif
         echo str
 
         let chr = getchar()
-        echom chr
+        if chr == g:soredake_ascii_mapping['esc']
+            " Cancel
+            call soredake#wipeout_buffer()
+            redraw!
+            break
+        elseif chr == g:soredake_ascii_mapping['enter']
+            " Enter file, if exists
+            call soredake#wipeout_buffer()
+            redraw!
+            break
+        elseif chr == g:soredake_ascii_mapping['tab']
+            " Enter the buffer
+            let s:search_string = str[3:]
+            break
+        endif
     endwhile
-
-    if chr == g:soredake_ascii_mapping['enter']
-        " Should enter file, if exists
-    else
-        " Cancel
-        call soredake#wipeout_buffer()
-    endif
-
-    redraw!
 endfunction
 
 function! s:show_buffer_list(current)
     set laststatus=0
+    let s:search_string = ''
 
-    let g:buflist = getbufinfo({ 'buflisted': 1 })
-    let g:lastwinnr = winnr()
-    let g:curbufidx = 1
+    let s:buflist = getbufinfo({ 'buflisted': 1 })
+    let s:lastwinnr = winnr()
+    let s:curbufidx = 1
 
     let l:idx = 1
-    for l:buf in g:buflist
+    for l:buf in s:buflist
         if a:current == l:buf['bufnr']
-            let g:curbufidx = l:idx
+            let s:curbufidx = l:idx
             break
         endif
 
@@ -136,13 +147,13 @@ function! s:show_buffer_list(current)
     call s:setup_window()
     call s:display_bufferlist()
     call s:register_bufferlist_mappings()
-    call s:fuzzy_find()
+    call soredake#fuzzyfind()
 endfunction
 
 function! soredake#wipeout_buffer()
     bwipeout
     set laststatus=2
-    execute g:lastwinnr . 'wincmd w'
+    execute s:lastwinnr . 'wincmd w'
 endfunction
 
 function! soredake#enable()
