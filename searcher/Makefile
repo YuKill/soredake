@@ -1,6 +1,6 @@
 CXX = g++
-#CXXFLAGS =
-CXXFLAGS = -DDEBUG=1
+CXXFLAGS =
+#CXXFLAGS = -DDEBUG=1
 
 SRC = searcher.cpp
 OBJ = $(SRC:.cpp=.o)
@@ -18,3 +18,6 @@ test: $(TSTOBJ)
 
 %.o: %.cpp
 	$(CXX) -c -O0 $? $(CXXFLAGS)
+
+clean:
+	rm -f $(EXE) $(TSTEXE) *.o

@@ -96,9 +96,22 @@ int main(int argc, char** argv) {
             else cout << '*';
         cout << endl;
 #endif
+
+        vector<int> pos_vector;
+
         for (int i = 0; i < s_len; ++i)
-            if (has_onebit_uarray(in_solution[i], p_len)) cout << i << " ";
-        cout << "-:- " << s << endl;
+            if (has_onebit_uarray(in_solution[i], p_len)) pos_vector.push_back(i);
+
+        if (pos_vector.empty()) continue;
+
+        // for (int i : pos_vector) cout << " " << i;
+        cout << pos_vector[0] << ";";
+        for (int i = 1, e = pos_vector.size(); i < e; ++i) {
+            if (pos_vector[i-1] != pos_vector[i] - 1)
+                cout << pos_vector[i-1] << " " << pos_vector[i] << ";";
+        }
+        cout << pos_vector[pos_vector.size() - 1];
+        cout << "-:-" << s << endl;
     }
 
     return 0;
