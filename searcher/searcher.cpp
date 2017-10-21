@@ -1,8 +1,4 @@
-#include <iostream>
-#include <cassert>
-#include <vector>
-
-using namespace std;
+#include "bitarray.h"
 
 int main(int argc, char** argv) {
     string              pattern;
@@ -20,11 +16,19 @@ int main(int argc, char** argv) {
     int s_number = s_vector.size();
     int p_len    = pattern.length();
 
+    unsigned buckets = get_uarray_buckets(p_len);
+
     for (int k = 0; k < s_number; ++k) {
         string& s     = s_vector[k];
         int     s_len = s.size();
 
-        vector<bool> in_solution(s_len, true);
+        vector<unsigned*> in_solution(s_len, nullptr);
+
+        for (int i = 0; i < s_len; ++i) {
+            in_solution[i] = new unsigned[buckets];
+            init_uarray(in_solution[i], p_len, true);
+        }
+
         vector<bool> check(p_len + 2, false);
         vector<bool> bcheck(p_len + 2, false);
 
@@ -46,6 +50,12 @@ int main(int argc, char** argv) {
             vector<bool> local_check  = check;
             vector<bool> local_bcheck = bcheck;
 
+            unsigned arr[buckets];
+            unsigned barr[buckets];
+
+            init_uarray(arr, p_len, false);
+            init_uarray(barr, p_len, false);
+
             bool pass  = false;
             bool bpass = false;
 
@@ -54,22 +64,27 @@ int main(int argc, char** argv) {
                 bool bexpr_check = s[bi] == pattern[j] && bcheck[j + 2];
 
                 local_check[j+1] = expr_check || local_check[j+1];
-                pass             = expr_check || pass;
+                set_uarray_bit(arr, j, expr_check);
 
                 local_bcheck[j+1] = bexpr_check || local_bcheck[j+1];
-                bpass             = bexpr_check || bpass;
+                set_uarray_bit(barr, j, bexpr_check);
 
 #ifdef DEBUG
-                if (pass && expr_check)
-                    cout << "\t s[" << i << "] in solution" << endl;
-                if (bpass && bexpr_check)
-                    cout << "\t s[" << bi << "] in solution" << endl;
+                if (expr_check)
+                    cout << "\t    ", print_uarray(arr, p_len);
+                if (bexpr_check)
+                    cout << "\t (b)", print_uarray(barr, p_len);
 #endif
             }
 
-            in_solution[i]  = in_solution[i]  && pass;
-            in_solution[bi] = in_solution[bi] && bpass;
-
+            land_uarray(in_solution[i], arr, in_solution[i], p_len);
+            land_uarray(in_solution[bi], barr, in_solution[bi], p_len);
+#ifdef DEBUG
+            cout << ">>    ";
+            print_uarray(in_solution[i], p_len);
+            cout << ">> (b)";
+            print_uarray(in_solution[bi], p_len);
+#endif
             check  = local_check;
             bcheck = local_bcheck;
         }
@@ -77,13 +92,13 @@ int main(int argc, char** argv) {
 #ifdef DEBUG
         cout << "Matched: ";
         for (int i = 0; i < s_len; ++i)
-            if (in_solution[i]) cout << s[i];
+            if (has_onebit_uarray(in_solution[i], p_len)) cout << s[i];
             else cout << '*';
         cout << endl;
 #endif
         for (int i = 0; i < s_len; ++i)
-            if (in_solution[i]) cout << i << " ";
-        cout << "-:-" << s << endl;
+            if (has_onebit_uarray(in_solution[i], p_len)) cout << i << " ";
+        cout << "-:- " << s << endl;
     }
 
     return 0;
