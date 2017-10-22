@@ -1,5 +1,25 @@
 #include "bitarray.h"
 
+/*
+ * This algorithm tries to find the letters that are in some sequence 'C' that
+ * is a subsequence of 'S' (which corresponds to the whole string) such that
+ * 'C' equals to a pattern sequence 'P'.
+ *
+ * The sequence, in this case, may not be contiguous. However, it must be always
+ * of increasing index.
+ *
+ * For example:
+ *    01 02 03 04 05 06 07 08 09 10 11 12 13
+ * S: e  u  e  h  e  e  u  h  h  e  h  u  h
+ * P: hue
+ * The solution would be the letters that have index '4', '7' and '10'.
+ * That is because: 
+ * - for letters from '0-3': there are no leading 'h' (first letter of 'P');
+ * - for letters from '5-6': there are no 'u' preceding the 'e's;
+ * - for letters from '8-9': there are neither 'u's nor 'e's (one after the other); and
+ * - for letters from '11-13': there are no 'e's.
+ */
+
 int main(int argc, char** argv) {
     string              pattern;
     vector<string>      s_vector;
@@ -22,6 +42,8 @@ int main(int argc, char** argv) {
         string& s     = s_vector[k];
         int     s_len = s.size();
 
+        // This is used to check what patter letters some letter of the
+        // string can take place.
         vector<unsigned*> in_solution(s_len, nullptr);
 
         for (int i = 0; i < s_len; ++i) {
@@ -29,6 +51,19 @@ int main(int argc, char** argv) {
             init_uarray(in_solution[i], p_len, true);
         }
 
+        // The core of this algorithm. We iterate the string in order to
+        // build these vectors.
+        //
+        // Notice that we are iterating both forwardly and backwardly at
+        // the same time. Here we explain 'check' when iterating forwardly.
+        // Given that, 'bcheck' is about the same, but backwardly.
+        //
+        // For every 'i' varying from '0' to the size of the string:
+        // For every 'j' varying from '0' to the size of the pattern:
+        // - If the current letter 's[i]' equals the current pattern letter
+        //   'p[j]' and the letter 'p[j-1]' has been already seen:
+        //   >> 'p[j]' has also already been seen;
+        //   >> 's[i]' may represent the 'j'-th letter of the pattern.
         vector<bool> check(p_len + 2, false);
         vector<bool> bcheck(p_len + 2, false);
 
@@ -50,14 +85,13 @@ int main(int argc, char** argv) {
             vector<bool> local_check  = check;
             vector<bool> local_bcheck = bcheck;
 
+            // We use 'arr' ('barr') to keep track of the 'p[j]' that
+            // 's[i]' ('s[bi]') can be when iterating forwardly (backwardly).
             unsigned arr[buckets];
             unsigned barr[buckets];
 
             init_uarray(arr, p_len, false);
             init_uarray(barr, p_len, false);
-
-            bool pass  = false;
-            bool bpass = false;
 
             for (int j = 0; j < p_len; ++j) {
                 bool expr_check   = s[i] == pattern[j] && check[j];
@@ -77,6 +111,8 @@ int main(int argc, char** argv) {
 #endif
             }
 
+            // The 'i'('bi')-th letter of the string may only be in some sequence
+            // if both the forwardly and backwardly iterations agree on some 'j'.
             land_uarray(in_solution[i], arr, in_solution[i], p_len);
             land_uarray(in_solution[bi], barr, in_solution[bi], p_len);
 #ifdef DEBUG
@@ -85,6 +121,7 @@ int main(int argc, char** argv) {
             cout << ">> (b)";
             print_uarray(in_solution[bi], p_len);
 #endif
+            // Update checks.
             check  = local_check;
             bcheck = local_bcheck;
         }
@@ -104,7 +141,7 @@ int main(int argc, char** argv) {
 
         if (pos_vector.empty()) continue;
 
-        // for (int i : pos_vector) cout << " " << i;
+        // Printing intervals, not indexes.
         cout << pos_vector[0] << ";";
         for (int i = 1, e = pos_vector.size(); i < e; ++i) {
             if (pos_vector[i-1] != pos_vector[i] - 1)
