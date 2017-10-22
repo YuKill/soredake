@@ -21,13 +21,13 @@
  */
 
 int main(int argc, char** argv) {
-    string              pattern;
-    vector<string>      s_vector;
-    vector<vector<int>> pos_vector;
+    string                       pattern;
+    vector<pair<string, string>> s_vector;
+    vector<vector<int>>          pos_vector;
 
     getline(cin, pattern);
-    for (string line; getline(cin, line);)
-        s_vector.push_back(line);
+    for (string file, str; getline(cin, file) && getline(cin, str);)
+        s_vector.push_back(make_pair(file, str));
 
 #ifdef DEBUG
     cout << "Pattern: " << pattern << endl;
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     unsigned buckets = get_uarray_buckets(p_len);
 
     for (int k = 0; k < s_number; ++k) {
-        string& s     = s_vector[k];
+        string& s     = s_vector[k].second;
         int     s_len = s.size();
 
         // This is used to check what patter letters some letter of the
@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
                 cout << pos_vector[i-1] << " " << pos_vector[i] << ";";
         }
         cout << pos_vector[pos_vector.size() - 1];
-        cout << "-:-" << s << endl;
+        cout << "-:-" << s << "-:-" << s_vector[k].first << endl;
     }
 
     return 0;
