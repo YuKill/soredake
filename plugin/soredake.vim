@@ -21,7 +21,7 @@ let g:soredake_ascii_mapping = {
 let s:str_list = []
 let s:filtered_list = []
 let s:search_string = ''
-let s:this_path = expand('%:p:h:h')
+let s:this_path = expand('<sfile>:p:h:h')
 
 function! s:setup_window()
     botright split BufferList
@@ -92,15 +92,18 @@ function! soredake#select_buffer()
         let l:idx = l:idx - line('$') + len(s:filtered_list) 
     endif
 
-    let l:bufnr = bufnr(s:filtered_list[l:idx]['file'])
-    let l:winnr = bufwinnr(l:bufnr)
+    if l:idx >= 0
+        let l:bufnr = bufnr(s:filtered_list[l:idx]['file'])
+        let l:winnr = bufwinnr(l:bufnr)
+        call soredake#wipeout_buffer()
 
-    call soredake#wipeout_buffer()
-
-    if l:winnr == -1
-        execute 'buffer ' . l:bufnr
+        if l:winnr == -1
+            execute 'buffer ' . l:bufnr
+        else
+            execute l:winnr . 'wincmd w'
+        endif
     else
-        execute l:winnr . 'wincmd w'
+        call soredake#wipeout_buffer()
     endif
 endfunction
 
@@ -134,6 +137,11 @@ function! s:call_hensearch(listdict, pattern)
         let filtered = []
         for lin in flt
             let i_split = split(lin, '-:-')
+
+            if len(i_split) < 3
+                call add(i_split, '')
+            endif
+
             let intervals_str = split(i_split[0], ' ')
             let intervals = []
 
@@ -160,6 +168,9 @@ function! soredake#hen_search(list)
     while v:true
         redraw
 
+        echo str
+        let chr = getchar()
+
         if chr == g:soredake_ascii_mapping['backspace']
             " Delete last character only if we have typed something
             if len(str) > 3
@@ -170,9 +181,6 @@ function! soredake#hen_search(list)
             let str = str . nr2char(chr)
         endif
 
-        echo str
-
-        let chr = getchar()
         if chr == g:soredake_ascii_mapping['esc']
             " Cancel
             call soredake#wipeout_buffer()
@@ -203,14 +211,23 @@ function! s:show_buffer_list(current)
     let s:lastwinnr = winnr()
     let s:curbufidx = 1
 
-    let l:idx = 1
-    for l:buf in s:bufdict
-        if a:current == l:buf['bufnr']
-            let s:curbufidx = l:idx
-            break
+    let idx = 1
+    let newbufs = []
+
+    for bff in s:bufdict
+        if a:current == bff['bufnr']
+            let s:curbufidx = idx
         endif
 
-        let l:idx += 1
+        if bff['name'] == ''
+            call add(newbufs, idx-1)
+        endif
+
+        let idx += 1
+    endfor
+
+    for id in newbufs
+        call remove(s:bufdict, id)
     endfor
 
     call s:setup_window()
@@ -227,6 +244,7 @@ function! soredake#wipeout_buffer()
     bwipeout
     set laststatus=2
     execute s:lastwinnr . 'wincmd w'
+    redraw!
 endfunction
 
 function! soredake#enable()
