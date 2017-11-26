@@ -18,6 +18,8 @@ let g:soredake_ascii_mapping = {
             \'ignore'   : -42
             \}
 
+let s:ignore_list = values(g:soredake_ascii_mapping)
+
 let s:str_list = []
 let s:filtered_list = []
 let s:search_string = ''
@@ -111,7 +113,7 @@ function! s:register_bufferlist_mappings()
     nnoremap <buffer> <Esc> :call soredake#wipeout_buffer()<Cr>
     nnoremap <buffer> <Space> :call soredake#select_buffer()<Cr>
     nnoremap <buffer> <Cr> :call soredake#select_buffer()<Cr>
-    nnoremap <buffer> <Tab> :call soredake#hen_search(s:str_list)<Cr>
+    nnoremap <buffer> <Tab> :call soredake#hen_search()<Cr>
 endfunction
 
 function! s:serialize(listdict)
@@ -157,7 +159,7 @@ function! s:call_hensearch(listdict, pattern)
     return filtered
 endfunction
 
-function! soredake#hen_search(list)
+function! soredake#hen_search()
     " Redraw screen
     redraw
 
@@ -176,7 +178,7 @@ function! soredake#hen_search(list)
             if len(str) > 3
                 let str = str[:len(str) - 2]
             endif
-        elseif chr != g:soredake_ascii_mapping['ignore']
+        elseif index(s:ignore_list, chr) == -1
             " Else, append it to the end of the string
             let str = str . nr2char(chr)
         endif
@@ -196,7 +198,7 @@ function! soredake#hen_search(list)
             let s:search_string = str[3:]
             break
         else
-            let s:filtered_list = s:call_hensearch(a:list, str[3:]) 
+            let s:filtered_list = s:call_hensearch(s:str_list, str[3:])
             call s:display_list(s:filtered_list)
         endif
     endwhile
@@ -237,7 +239,7 @@ function! s:show_buffer_list(current)
 
     call s:display_list(s:filtered_list)
     call s:register_bufferlist_mappings()
-    call soredake#hen_search(s:str_list)
+    call soredake#hen_search()
 endfunction
 
 function! soredake#wipeout_buffer()
